@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import csv
-from math import sin, pi, cos
+from math import sin, pi, cos, floor
 from itertools import starmap
 from matplotlib import pyplot as plt
+from argparse import Namespace
 import matplotlib.tri as tri
 import numpy as np
 
@@ -42,6 +43,7 @@ if __name__ == '__main__':
 	# Used for plotting
 	x_data = []
 	y_data = []
+	z_data = []
 	titles = []
 
 	for line in reader:
@@ -70,6 +72,7 @@ if __name__ == '__main__':
 
 		x_data.append(coord_x)
 		y_data.append(coord_y)
+		z_data.append(coord_z)
 		titles.append(line[0])
 
 	print('X max:', max(x_data), 'X min', min(x_data))
@@ -80,13 +83,35 @@ if __name__ == '__main__':
 	# Center and scale
 	x_points = np.array(x_data) - np.mean(x_data)
 	y_points = np.array(y_data) - np.mean(y_data)
+	z_points = np.array(z_data)
 
 	# make delaunai triangulation
 	triangulation = tri.Triangulation(x_points, y_points)
 	plt.triplot(triangulation, 'bo-')
 
-	# Now the plotting thing
-	plt.plot(x_points, y_points, 'o')
+	for edge in triangulation.edges:
+		v_1 = Namespace(**{
+			'x': x_points[edge[0]],
+			'y': y_points[edge[0]],
+			'z': z_points[edge[0]],
+		})
+		v_2 = Namespace(**{
+			'x': x_points[edge[1]],
+			'y': y_points[edge[1]],
+			'z': z_points[edge[1]],
+		})
+		if v_2.z < v_1.z:
+			v_2, v_1 = v_1, v_2
+
+		diff = (v_2.z - v_1.z)
+		dist_x = v_2.x - v_1.x
+		dist_y = v_2.y - v_1.y
+
+		for z in range(floor(v_1.z) + 1, int(v_2.z)):
+			p_x = v_2.x - (z - v_1.z)*dist_x/diff
+			p_y = v_2.y - (z - v_1.z)*dist_y/diff
+			plt.plot(p_x, p_y, 'ro')
+			plt.text(p_x, p_y, z)
 
 	for x, y, t in zip(x_points, y_points, titles):
 		plt.text(x, y, t)
