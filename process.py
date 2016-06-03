@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import csv
+import json
 from math import sin, pi, cos, floor
 from itertools import starmap
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 from argparse import Namespace
 import matplotlib.tri as tri
 import numpy as np
@@ -75,8 +77,20 @@ if __name__ == '__main__':
 		z_data.append(coord_z)
 		titles.append(line[0])
 
-	print('X max:', max(x_data), 'X min', min(x_data))
-	print('Y max:', max(y_data), 'Y min', min(y_data))
+	json.dump({
+		'x': {
+			'min': min(x_data),
+			'max': max(x_data),
+		},
+		'y': {
+			'min': min(y_data),
+			'max': max(y_data),
+		},
+		'z': {
+			'min': min(z_data),
+			'max': max(z_data),
+		},
+	}, open('limits.json', 'w'), indent=2)
 
 	writer.writerows(lines)
 
@@ -87,31 +101,22 @@ if __name__ == '__main__':
 
 	# make delaunai triangulation
 	triangulation = tri.Triangulation(x_points, y_points)
-	plt.triplot(triangulation, 'bo-')
 
-	for edge in triangulation.edges:
-		v_1 = Namespace(**{
-			'x': x_points[edge[0]],
-			'y': y_points[edge[0]],
-			'z': z_points[edge[0]],
-		})
-		v_2 = Namespace(**{
-			'x': x_points[edge[1]],
-			'y': y_points[edge[1]],
-			'z': z_points[edge[1]],
-		})
-		if v_2.z < v_1.z:
-			v_2, v_1 = v_1, v_2
+	refiner = tri.UniformTriRefiner(triangulation)
+	tri_refi, z_test_refi = refiner.refine_field(z_points, subdiv=3)
 
-		diff = (v_2.z - v_1.z)
-		dist_x = v_2.x - v_1.x
-		dist_y = v_2.y - v_1.y
+	plt.gca().set_aspect('equal')
+	# plt.triplot(triangulation, 'bo-')
+	plt.triplot(triangulation, lw=0.5, color='green')
 
-		for z in range(floor(v_1.z) + 1, int(v_2.z)):
-			p_x = v_2.x - (z - v_1.z)*dist_x/diff
-			p_y = v_2.y - (z - v_1.z)*dist_y/diff
-			plt.plot(p_x, p_y, 'ro')
-			plt.text(p_x, p_y, z)
+	levels = np.arange(1205, 1228, 1)
+	cmap = cm.get_cmap(name='terrain', lut=None)
+	plt.tricontourf(tri_refi, z_test_refi, levels=levels, cmap=cmap)
+	plt.tricontour(tri_refi, z_test_refi,
+		levels=levels,
+		colors=['0.25', '0.5', '0.5', '0.5', '0.5'],
+		linewidths=[1.0, 0.5, 0.5, 0.5, 0.5]
+	)
 
 	for x, y, t in zip(x_points, y_points, titles):
 		plt.text(x, y, t)
