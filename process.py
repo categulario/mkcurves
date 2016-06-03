@@ -106,16 +106,15 @@ if __name__ == '__main__':
 	tri_refi, z_test_refi = refiner.refine_field(z_points, subdiv=3)
 
 	plt.gca().set_aspect('equal')
-	# plt.triplot(triangulation, 'bo-')
-	plt.triplot(triangulation, lw=0.5, color='green')
+	plt.triplot(triangulation, lw=0.5, color='gray')
 
-	levels = np.arange(1205, 1228, 1)
+	levels = np.arange(int(min(z_data)), int(max(z_data)), 1)
 	cmap = cm.get_cmap(name='terrain', lut=None)
 	plt.tricontourf(tri_refi, z_test_refi, levels=levels, cmap=cmap)
 	plt.tricontour(tri_refi, z_test_refi,
 		levels=levels,
-		colors=['0.25', '0.5', '0.5', '0.5', '0.5'],
-		linewidths=[1.0, 0.5, 0.5, 0.5, 0.5]
+		colors    =['0.25', '0.5', '0.5', '0.5', '0.5'],
+		linewidths=[ 1.0  ,  0.5 ,  0.5 ,  0.5 ,  0.5 ],
 	)
 
 	for x, y, t in zip(x_points, y_points, titles):
